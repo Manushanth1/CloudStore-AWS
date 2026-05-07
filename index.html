@@ -1,0 +1,1385 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CloudStore</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap"
+    rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0a0a0f;
+      --surface: #12121a;
+      --surface2: #1a1a26;
+      --border: #2a2a3d;
+      --accent: #6c63ff;
+      --accent2: #ff6584;
+      --accent3: #43e8b0;
+      --text: #e8e8f0;
+      --muted: #6b6b8a;
+      --danger: #ff4757;
+      --success: #43e8b0;
+      --font: 'Syne', sans-serif;
+      --mono: 'DM Mono', monospace;
+    }
+
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── NOISE OVERLAY ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 999;
+    }
+
+    /* ── AUTH SCREEN ── */
+    #auth-screen {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 2rem;
+      background: radial-gradient(ellipse 80% 60% at 50% 0%, #1a1040 0%, var(--bg) 70%);
+    }
+
+    .auth-card {
+      width: 100%;
+      max-width: 420px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 2.5rem;
+      position: relative;
+      overflow: hidden;
+      animation: slideUp 0.5s ease;
+    }
+
+    .auth-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--accent), var(--accent2), var(--accent3));
+    }
+
+    .auth-glow {
+      position: absolute;
+      top: -80px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 300px;
+      height: 200px;
+      background: radial-gradient(ellipse, rgba(108, 99, 255, 0.15) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      margin-bottom: 2rem;
+    }
+
+    .logo-icon {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+    }
+
+    .logo-text {
+      font-size: 1.3rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+    }
+
+    .logo-text span {
+      color: var(--accent);
+    }
+
+    .auth-title {
+      font-size: 1.6rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      margin-bottom: 0.4rem;
+    }
+
+    .auth-sub {
+      color: var(--muted);
+      font-size: 0.85rem;
+      font-family: var(--mono);
+      margin-bottom: 1.8rem;
+    }
+
+    .tabs {
+      display: flex;
+      background: var(--bg);
+      border-radius: 10px;
+      padding: 4px;
+      margin-bottom: 1.8rem;
+      border: 1px solid var(--border);
+    }
+
+    .tab {
+      flex: 1;
+      padding: 0.5rem;
+      text-align: center;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      border-radius: 7px;
+      transition: all 0.2s;
+      color: var(--muted);
+      font-family: var(--font);
+    }
+
+    .tab.active {
+      background: var(--accent);
+      color: white;
+    }
+
+    .field {
+      margin-bottom: 1rem;
+    }
+
+    .field label {
+      display: block;
+      font-size: 0.75rem;
+      font-family: var(--mono);
+      color: var(--muted);
+      margin-bottom: 0.4rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .field input {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.75rem 1rem;
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 0.9rem;
+      transition: border-color 0.2s;
+      outline: none;
+    }
+
+    .field input:focus {
+      border-color: var(--accent);
+    }
+
+    .btn {
+      width: 100%;
+      padding: 0.85rem;
+      background: linear-gradient(135deg, var(--accent), #8b5cf6);
+      border: none;
+      border-radius: 10px;
+      color: white;
+      font-family: var(--font);
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-top: 0.5rem;
+      letter-spacing: 0.02em;
+    }
+
+    .btn:hover {
+      opacity: 0.9;
+      transform: translateY(-1px);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-sm {
+      width: auto;
+      padding: 0.4rem 0.9rem;
+      font-size: 0.78rem;
+      border-radius: 7px;
+      margin-top: 0;
+    }
+
+    .btn-ghost {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+
+    .btn-ghost:hover {
+      border-color: var(--accent);
+      background: rgba(108, 99, 255, 0.1);
+    }
+
+    .btn-danger {
+      background: linear-gradient(135deg, var(--danger), #c0392b);
+    }
+
+    .btn-success {
+      background: linear-gradient(135deg, var(--accent3), #00b894);
+      color: #0a0a0f;
+    }
+
+    .err-msg {
+      background: rgba(255, 71, 87, 0.1);
+      border: 1px solid rgba(255, 71, 87, 0.3);
+      border-radius: 8px;
+      padding: 0.6rem 0.9rem;
+      font-size: 0.82rem;
+      font-family: var(--mono);
+      color: var(--danger);
+      margin-top: 0.8rem;
+      display: none;
+    }
+
+    .ok-msg {
+      background: rgba(67, 232, 176, 0.1);
+      border: 1px solid rgba(67, 232, 176, 0.3);
+      border-radius: 8px;
+      padding: 0.6rem 0.9rem;
+      font-size: 0.82rem;
+      font-family: var(--mono);
+      color: var(--accent3);
+      margin-top: 0.8rem;
+      display: none;
+    }
+
+    /* ── DASHBOARD ── */
+    #dashboard-screen {
+      display: none;
+      min-height: 100vh;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 2rem;
+      border-bottom: 1px solid var(--border);
+      background: rgba(18, 18, 26, 0.9);
+      backdrop-filter: blur(12px);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .topbar-logo {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .topbar-logo .logo-icon {
+      width: 28px;
+      height: 28px;
+      font-size: 0.85rem;
+      border-radius: 8px;
+    }
+
+    .topbar-logo .logo-text {
+      font-size: 1.1rem;
+    }
+
+    .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .user-badge {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.4rem 0.8rem;
+      font-size: 0.78rem;
+      font-family: var(--mono);
+      color: var(--muted);
+    }
+
+    .user-badge span {
+      color: var(--accent3);
+    }
+
+    .main-content {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+
+    .dashboard-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .dashboard-title {
+      font-size: 2rem;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+    }
+
+    .dashboard-title span {
+      color: var(--accent);
+    }
+
+    .stats-row {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+    }
+
+    .stat-card {
+      flex: 1;
+      min-width: 140px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.2rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stat-card::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      right: 0;
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      opacity: 0.08;
+    }
+
+    .stat-card:nth-child(1)::after {
+      background: var(--accent);
+    }
+
+    .stat-card:nth-child(2)::after {
+      background: var(--accent2);
+    }
+
+    .stat-card:nth-child(3)::after {
+      background: var(--accent3);
+    }
+
+    .stat-label {
+      font-size: 0.7rem;
+      font-family: var(--mono);
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.4rem;
+    }
+
+    .stat-value {
+      font-size: 1.6rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+    }
+
+    /* ── UPLOAD ZONE ── */
+    .upload-zone {
+      border: 2px dashed var(--border);
+      border-radius: 16px;
+      padding: 2.5rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s;
+      background: var(--surface);
+      margin-bottom: 2rem;
+      position: relative;
+    }
+
+    .upload-zone:hover,
+    .upload-zone.drag-over {
+      border-color: var(--accent);
+      background: rgba(108, 99, 255, 0.05);
+    }
+
+    .upload-icon {
+      font-size: 2.5rem;
+      margin-bottom: 0.8rem;
+    }
+
+    .upload-title {
+      font-size: 1rem;
+      font-weight: 700;
+      margin-bottom: 0.3rem;
+    }
+
+    .upload-sub {
+      font-size: 0.8rem;
+      font-family: var(--mono);
+      color: var(--muted);
+    }
+
+    #file-input {
+      display: none;
+    }
+
+    .upload-progress {
+      display: none;
+      margin-top: 1rem;
+    }
+
+    .progress-bar {
+      height: 4px;
+      background: var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+      margin-top: 0.5rem;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), var(--accent3));
+      border-radius: 4px;
+      transition: width 0.3s;
+      width: 0%;
+    }
+
+    /* ── FOLDER FILTER ── */
+    .filter-row {
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+    }
+
+    .filter-label {
+      font-size: 0.75rem;
+      font-family: var(--mono);
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .folder-chip {
+      padding: 0.35rem 0.9rem;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      font-size: 0.78rem;
+      font-family: var(--mono);
+      cursor: pointer;
+      transition: all 0.2s;
+      color: var(--muted);
+      background: var(--surface);
+    }
+
+    .folder-chip.active,
+    .folder-chip:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: rgba(108, 99, 255, 0.1);
+    }
+
+    /* ── FILE LIST ── */
+    .files-grid {
+      display: grid;
+      gap: 0.8rem;
+    }
+
+    .file-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1rem 1.2rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      transition: all 0.2s;
+      animation: slideUp 0.3s ease;
+    }
+
+    .file-card:hover {
+      border-color: var(--border);
+      background: var(--surface2);
+      transform: translateX(3px);
+    }
+
+    .file-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.3rem;
+      flex-shrink: 0;
+    }
+
+    .file-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .file-name {
+      font-size: 0.9rem;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: 0.2rem;
+    }
+
+    .file-meta {
+      font-size: 0.72rem;
+      font-family: var(--mono);
+      color: var(--muted);
+      display: flex;
+      gap: 0.8rem;
+      flex-wrap: wrap;
+    }
+
+    .file-meta .folder-tag {
+      color: var(--accent);
+      background: rgba(108, 99, 255, 0.1);
+      border-radius: 4px;
+      padding: 0 0.4rem;
+    }
+
+    .shared-badge {
+      font-size: 0.65rem;
+      font-family: var(--mono);
+      background: rgba(67, 232, 176, 0.15);
+      color: var(--accent3);
+      border: 1px solid rgba(67, 232, 176, 0.3);
+      border-radius: 4px;
+      padding: 0.1rem 0.4rem;
+    }
+
+    .file-actions {
+      display: flex;
+      gap: 0.5rem;
+      flex-shrink: 0;
+    }
+
+    .icon-btn {
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+
+    .icon-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .icon-btn.danger:hover {
+      border-color: var(--danger);
+      color: var(--danger);
+    }
+
+    .icon-btn.share:hover {
+      border-color: var(--accent3);
+      color: var(--accent3);
+    }
+
+    /* ── MODAL ── */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(6px);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-overlay.open {
+      display: flex;
+    }
+
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 2rem;
+      width: 90%;
+      max-width: 440px;
+      animation: slideUp 0.3s ease;
+      position: relative;
+    }
+
+    .modal-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+    }
+
+    .share-url-box {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.8rem 1rem;
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      color: var(--accent3);
+      word-break: break-all;
+      margin-bottom: 1rem;
+      line-height: 1.5;
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 1.2rem;
+      cursor: pointer;
+      line-height: 1;
+    }
+
+    /* ── FOLDER MODAL ── */
+    .folder-select {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.75rem 1rem;
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 0.9rem;
+      outline: none;
+      margin-bottom: 1rem;
+      cursor: pointer;
+    }
+
+    /* ── EMPTY STATE ── */
+    .empty-state {
+      text-align: center;
+      padding: 4rem 2rem;
+      color: var(--muted);
+    }
+
+    .empty-state .empty-icon {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+      opacity: 0.4;
+    }
+
+    .empty-state p {
+      font-family: var(--mono);
+      font-size: 0.85rem;
+    }
+
+    /* ── TOAST ── */
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 0.9rem 1.2rem;
+      font-size: 0.85rem;
+      font-family: var(--mono);
+      z-index: 300;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.3s;
+      max-width: 320px;
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    .toast.success {
+      border-color: rgba(67, 232, 176, 0.4);
+      color: var(--accent3);
+    }
+
+    .toast.error {
+      border-color: rgba(255, 71, 87, 0.4);
+      color: var(--danger);
+    }
+
+    /* ── LOADER ── */
+    .loader {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      vertical-align: middle;
+      margin-right: 0.4rem;
+    }
+
+    /* ── ANIMATIONS ── */
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    /* ── CONFIG BANNER ── */
+    .config-banner {
+      background: rgba(255, 101, 132, 0.1);
+      border: 1px solid rgba(255, 101, 132, 0.3);
+      border-radius: 12px;
+      padding: 1rem 1.2rem;
+      margin-bottom: 2rem;
+      font-size: 0.82rem;
+      font-family: var(--mono);
+      line-height: 1.8;
+    }
+
+    .config-banner strong {
+      color: var(--accent2);
+    }
+
+    .config-banner code {
+      background: var(--bg);
+      padding: 0.1rem 0.4rem;
+      border-radius: 4px;
+      color: var(--accent3);
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ═══════════════════════════════════════════════ AUTH SCREEN -->
+  <div id="auth-screen">
+    <div class="auth-card">
+      <div class="auth-glow"></div>
+      <div class="logo">
+        <div class="logo-icon">☁</div>
+        <div class="logo-text">Cloud<span>Store</span></div>
+      </div>
+      <div class="auth-title">Your files,<br>everywhere.</div>
+      <div class="auth-sub">// secure cloud storage on AWS</div>
+
+      <div class="tabs">
+        <div class="tab active" onclick="switchTab('login')">Login</div>
+        <div class="tab" onclick="switchTab('signup')">Sign Up</div>
+      </div>
+
+      <!-- LOGIN FORM -->
+      <div id="login-form">
+        <div class="field">
+          <label>Email</label>
+          <input type="email" id="login-email" placeholder="you@example.com" />
+        </div>
+        <div class="field">
+          <label>Password</label>
+          <input type="password" id="login-password" placeholder="••••••••" />
+        </div>
+        <button class="btn" onclick="handleLogin()">Login →</button>
+        <div class="err-msg" id="login-err"></div>
+      </div>
+
+      <!-- SIGNUP FORM -->
+      <div id="signup-form" style="display:none">
+        <div class="field">
+          <label>Full Name</label>
+          <input type="text" id="signup-name" placeholder="Your Name" />
+        </div>
+        <div class="field">
+          <label>Email</label>
+          <input type="email" id="signup-email" placeholder="you@example.com" />
+        </div>
+        <div class="field">
+          <label>Password</label>
+          <input type="password" id="signup-password" placeholder="Min 8 chars" />
+        </div>
+        <button class="btn" onclick="handleSignup()">Create Account →</button>
+        <div class="err-msg" id="signup-err"></div>
+        <div class="ok-msg" id="signup-ok"></div>
+      </div>
+
+      <!-- VERIFY FORM -->
+      <div id="verify-form" style="display:none">
+        <div class="auth-sub" style="margin-bottom:1rem">Check your email for a verification code</div>
+        <div class="field">
+          <label>Verification Code</label>
+          <input type="text" id="verify-code" placeholder="123456" />
+        </div>
+        <button class="btn" onclick="handleVerify()">Verify →</button>
+        <div class="err-msg" id="verify-err"></div>
+        <div class="ok-msg" id="verify-ok"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════ DASHBOARD SCREEN -->
+  <div id="dashboard-screen">
+    <div class="topbar">
+      <div class="topbar-logo">
+        <div class="logo-icon">☁</div>
+        <div class="logo-text">Cloud<span style="color:var(--accent)">Store</span></div>
+      </div>
+      <div class="topbar-right">
+        <div class="user-badge">logged in as <span id="user-email-display">—</span></div>
+        <button class="btn btn-ghost btn-sm" onclick="handleLogout()">Logout</button>
+      </div>
+    </div>
+
+    <div class="main-content">
+
+      <!-- CONFIG BANNER — remove after connecting -->
+      <div class="config-banner" id="config-banner">
+        <strong>⚡ Connect your AWS services</strong> — open this file in a code editor and update the
+        <code>CONFIG</code> object at the top of the &lt;script&gt; tag:<br>
+        <code>API_BASE_URL</code> · <code>USER_POOL_ID</code> · <code>CLIENT_ID</code> · <code>REGION</code>
+      </div>
+
+      <div class="dashboard-header">
+        <div>
+          <div class="dashboard-title">My <span>Files</span></div>
+        </div>
+        <button class="btn btn-sm" onclick="document.getElementById('file-input').click()">+ Upload File</button>
+      </div>
+
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-label">Total Files</div>
+          <div class="stat-value" id="stat-total">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Total Size</div>
+          <div class="stat-value" id="stat-size">0 MB</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Shared</div>
+          <div class="stat-value" id="stat-shared">0</div>
+        </div>
+      </div>
+
+      <!-- UPLOAD ZONE -->
+      <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()"
+        ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)">
+        <div class="upload-icon">📤</div>
+        <div class="upload-title">Drop files here or click to upload</div>
+        <div class="upload-sub">All file types supported · Max 100MB per file</div>
+        <input type="file" id="file-input" multiple onchange="handleFileSelect(event)" />
+        <div class="upload-progress" id="upload-progress">
+          <div class="upload-sub" id="upload-status-text">Uploading...</div>
+          <div class="progress-bar">
+            <div class="progress-fill" id="progress-fill"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- FOLDER FILTER -->
+      <div class="filter-row">
+        <span class="filter-label">Folder:</span>
+        <div class="folder-chip active" onclick="filterFolder(null, this)">All Files</div>
+        <div class="folder-chip" onclick="filterFolder('root', this)">📁 Root</div>
+        <div class="folder-chip" onclick="filterFolder('documents', this)">📄 Documents</div>
+        <div class="folder-chip" onclick="filterFolder('images', this)">🖼 Images</div>
+        <div class="folder-chip" onclick="filterFolder('videos', this)">🎬 Videos</div>
+        <div class="folder-chip" onclick="filterFolder('other', this)">📦 Other</div>
+      </div>
+
+      <!-- FILES LIST -->
+      <div class="files-grid" id="files-list">
+        <div class="empty-state">
+          <div class="empty-icon">☁️</div>
+          <p>No files yet. Upload something!</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════ MODALS -->
+
+  <!-- Upload Folder Modal -->
+  <div class="modal-overlay" id="folder-modal">
+    <div class="modal">
+      <button class="modal-close" onclick="closeModal('folder-modal')">✕</button>
+      <div class="modal-title">📁 Choose Folder</div>
+      <p style="font-size:0.82rem;font-family:var(--mono);color:var(--muted);margin-bottom:1rem">Where should this file
+        go?</p>
+      <select class="folder-select" id="folder-select">
+        <option value="root">📁 Root</option>
+        <option value="documents">📄 Documents</option>
+        <option value="images">🖼 Images</option>
+        <option value="videos">🎬 Videos</option>
+        <option value="other">📦 Other</option>
+      </select>
+      <button class="btn" onclick="confirmUpload()">Upload Here →</button>
+    </div>
+  </div>
+
+  <!-- Share Link Modal -->
+  <div class="modal-overlay" id="share-modal">
+    <div class="modal">
+      <button class="modal-close" onclick="closeModal('share-modal')">✕</button>
+      <div class="modal-title">🔗 Share Link</div>
+      <p style="font-size:0.82rem;font-family:var(--mono);color:var(--muted);margin-bottom:1rem">Link expires in 7 days
+      </p>
+      <div class="share-url-box" id="share-url-display">Generating link...</div>
+      <button class="btn btn-success btn-sm" onclick="copyShareLink()">Copy Link</button>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // ══════════════════════════════════════════════════════════
+    //  ⚡ CONNECT YOUR AWS SERVICES HERE
+    //  Replace the placeholder values below with your real ones
+    // ══════════════════════════════════════════════════════════
+    const CONFIG = {
+      API_BASE_URL: 'https://ajg2oz6gu0.execute-api.ap-south-1.amazonaws.com/prod',
+      USER_POOL_ID: 'ap-south-1_oimHWVGzp',
+      CLIENT_ID: '4oagipadmf2a0hfu0qhah14sqt',
+      REGION: 'ap-south-1',
+    };
+    // ══════════════════════════════════════════════════════════
+
+    // ── STATE ──
+    let accessToken = null;
+    let idToken = null;
+    let currentUser = null;
+    let allFiles = [];
+    let pendingFiles = [];
+    let currentFilterFolder = null;
+    let pendingSignupEmail = '';
+
+    // ── COGNITO HELPERS ──
+    async function cognitoRequest(action, body) {
+      const res = await fetch(
+        `https://cognito-idp.${CONFIG.REGION}.amazonaws.com/`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-amz-json-1.1',
+            'X-Amz-Target': `AWSCognitoIdentityProviderService.${action}`,
+          },
+          body: JSON.stringify(body),
+        }
+      );
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || data.__type || 'Auth error');
+      return data;
+    }
+
+    // ── AUTH FUNCTIONS ──
+    function switchTab(tab) {
+      document.querySelectorAll('.tab').forEach((t, i) => t.classList.toggle('active', (tab === 'login' && i === 0) || (tab === 'signup' && i === 1)));
+      document.getElementById('login-form').style.display = tab === 'login' ? '' : 'none';
+      document.getElementById('signup-form').style.display = tab === 'signup' ? '' : 'none';
+      document.getElementById('verify-form').style.display = 'none';
+    }
+
+    async function handleLogin() {
+      const email = document.getElementById('login-email').value.trim();
+      const password = document.getElementById('login-password').value;
+      const errEl = document.getElementById('login-err');
+      errEl.style.display = 'none';
+
+      if (!email || !password) { showErr(errEl, 'Fill in all fields'); return; }
+
+      const btn = event.target;
+      btn.disabled = true;
+      btn.innerHTML = '<span class="loader"></span>Logging in...';
+
+      try {
+        const data = await cognitoRequest('InitiateAuth', {
+          AuthFlow: 'USER_PASSWORD_AUTH',
+          ClientId: CONFIG.CLIENT_ID,
+          AuthParameters: { USERNAME: email, PASSWORD: password },
+        });
+
+        accessToken = data.AuthenticationResult.AccessToken;
+        idToken = data.AuthenticationResult.IdToken;
+        currentUser = email;
+        onLoginSuccess();
+      } catch (e) {
+        showErr(errEl, e.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = 'Login →';
+      }
+    }
+
+    async function handleSignup() {
+      const name = document.getElementById('signup-name').value.trim();
+      const email = document.getElementById('signup-email').value.trim();
+      const password = document.getElementById('signup-password').value;
+      const errEl = document.getElementById('signup-err');
+      const okEl = document.getElementById('signup-ok');
+      errEl.style.display = 'none';
+      okEl.style.display = 'none';
+
+      if (!name || !email || !password) { showErr(errEl, 'Fill in all fields'); return; }
+
+      const btn = event.target;
+      btn.disabled = true;
+      btn.innerHTML = '<span class="loader"></span>Creating account...';
+
+      try {
+        await cognitoRequest('SignUp', {
+          ClientId: CONFIG.CLIENT_ID,
+          Username: email,
+          Password: password,
+          UserAttributes: [
+            { Name: 'email', Value: email },
+            { Name: 'name', Value: name },
+          ],
+        });
+
+        pendingSignupEmail = email;
+        okEl.textContent = '✓ Account created! Check your email for a code.';
+        okEl.style.display = 'block';
+        document.getElementById('signup-form').style.display = 'none';
+        document.getElementById('verify-form').style.display = '';
+      } catch (e) {
+        showErr(errEl, e.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = 'Create Account →';
+      }
+    }
+
+    async function handleVerify() {
+      const code = document.getElementById('verify-code').value.trim();
+      const errEl = document.getElementById('verify-err');
+      const okEl = document.getElementById('verify-ok');
+      errEl.style.display = 'none';
+
+      if (!code) { showErr(errEl, 'Enter the verification code'); return; }
+
+      const btn = event.target;
+      btn.disabled = true;
+      btn.innerHTML = '<span class="loader"></span>Verifying...';
+
+      try {
+        await cognitoRequest('ConfirmSignUp', {
+          ClientId: CONFIG.CLIENT_ID,
+          Username: pendingSignupEmail,
+          ConfirmationCode: code,
+        });
+        okEl.textContent = '✓ Verified! You can now log in.';
+        okEl.style.display = 'block';
+        setTimeout(() => switchTab('login'), 1500);
+      } catch (e) {
+        showErr(errEl, e.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = 'Verify →';
+      }
+    }
+
+    function handleLogout() {
+      accessToken = null; idToken = null; currentUser = null; allFiles = [];
+      document.getElementById('dashboard-screen').style.display = 'none';
+      document.getElementById('auth-screen').style.display = 'flex';
+      switchTab('login');
+    }
+
+    function onLoginSuccess() {
+      document.getElementById('auth-screen').style.display = 'none';
+      document.getElementById('dashboard-screen').style.display = 'block';
+      document.getElementById('user-email-display').textContent = currentUser;
+      loadFiles();
+    }
+
+    // ── API HELPERS ──
+    async function apiCall(method, path, body = null) {
+      const res = await fetch(CONFIG.API_BASE_URL + path, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': idToken,
+        },
+        body: body ? JSON.stringify(body) : null,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || data.message || 'API error');
+      return data;
+    }
+
+    // ── FILE OPERATIONS ──
+    async function loadFiles() {
+      try {
+        const data = await apiCall('GET', '/files');
+        allFiles = data.files || [];
+        renderFiles(allFiles);
+        updateStats(allFiles);
+      } catch (e) {
+        showToast('Failed to load files: ' + e.message, 'error');
+      }
+    }
+
+    function renderFiles(files) {
+      const list = document.getElementById('files-list');
+      if (!files.length) {
+        list.innerHTML = `<div class="empty-state"><div class="empty-icon">☁️</div><p>No files here yet.</p></div>`;
+        return;
+      }
+      list.innerHTML = files.map(f => `
+    <div class="file-card">
+      <div class="file-icon" style="background:${fileColor(f.fileType)}">${fileEmoji(f.fileType)}</div>
+      <div class="file-info">
+        <div class="file-name">${escHtml(f.fileName)}</div>
+        <div class="file-meta">
+          <span>${formatSize(f.fileSize)}</span>
+          <span>${formatDate(f.uploadedAt)}</span>
+          <span class="folder-tag">${f.folder}</span>
+          ${f.isShared ? '<span class="shared-badge">shared</span>' : ''}
+        </div>
+      </div>
+      <div class="file-actions">
+        <button class="icon-btn" title="Download" onclick="downloadFile('${escHtml(f.fileId)}')">⬇</button>
+        <button class="icon-btn share" title="Share" onclick="shareFile('${escHtml(f.fileId)}')">🔗</button>
+        <button class="icon-btn danger" title="Delete" onclick="deleteFile('${escHtml(f.fileId)}', '${escHtml(f.fileName)}')">🗑</button>
+      </div>
+    </div>
+  `).join('');
+    }
+
+    function updateStats(files) {
+      document.getElementById('stat-total').textContent = files.length;
+      document.getElementById('stat-size').textContent = formatSize(files.reduce((s, f) => s + (f.fileSize || 0), 0));
+      document.getElementById('stat-shared').textContent = files.filter(f => f.isShared).length;
+    }
+
+    // ── UPLOAD ──
+    function handleFileSelect(e) {
+      pendingFiles = Array.from(e.target.files);
+      if (!pendingFiles.length) return;
+      document.getElementById('folder-modal').classList.add('open');
+    }
+
+    function onDragOver(e) { e.preventDefault(); document.getElementById('upload-zone').classList.add('drag-over'); }
+    function onDragLeave() { document.getElementById('upload-zone').classList.remove('drag-over'); }
+    function onDrop(e) { e.preventDefault(); onDragLeave(); pendingFiles = Array.from(e.dataTransfer.files); if (pendingFiles.length) document.getElementById('folder-modal').classList.add('open'); }
+
+    async function confirmUpload() {
+      const folder = document.getElementById('folder-select').value;
+      closeModal('folder-modal');
+
+      const progress = document.getElementById('upload-progress');
+      const fill = document.getElementById('progress-fill');
+      const statusTxt = document.getElementById('upload-status-text');
+      progress.style.display = 'block';
+
+      for (let i = 0; i < pendingFiles.length; i++) {
+        const file = pendingFiles[i];
+        statusTxt.textContent = `Uploading ${file.name} (${i + 1}/${pendingFiles.length})...`;
+        fill.style.width = '10%';
+
+        try {
+          // Step 1: Get presigned URL
+          const data = await apiCall('POST', '/files/upload', {
+            fileName: file.name,
+            fileType: file.type || 'application/octet-stream',
+            fileSize: file.size,
+            folder,
+          });
+
+          console.log("Upload API Response:", JSON.stringify(data, null, 2));
+          console.log("Response keys:", Object.keys(data));
+
+          // Auto-detect the presigned URL field
+          const possibleKeys = ['url', 'uploadURL', 'uploadUrl', 'presignedUrl', 'presigned_url', 'signedUrl', 'signed_url', 'upload_url'];
+          let s3Url = null;
+          for (const key of possibleKeys) {
+            if (data[key]) { s3Url = data[key]; console.log("Found URL in field:", key); break; }
+          }
+          // Fallback: find any string value that looks like a URL
+          if (!s3Url) {
+            for (const [key, val] of Object.entries(data)) {
+              if (typeof val === 'string' && val.startsWith('https://')) { s3Url = val; console.log("Found URL in field:", key); break; }
+            }
+          }
+          if (!s3Url) throw new Error('No presigned URL found in API response. Check console for response keys.');
+
+          fill.style.width = '40%';
+
+          // Step 2: Upload directly to S3
+          await fetch(s3Url, {
+            method: 'PUT',
+            headers: { 'Content-Type': file.type || 'application/octet-stream' },
+            body: file,
+          });
+
+          fill.style.width = '100%';
+          showToast(`✓ ${file.name} uploaded!`, 'success');
+        } catch (e) {
+          showToast(`✗ Failed: ${file.name} — ${e.message}`, 'error');
+        }
+      }
+
+      setTimeout(() => { progress.style.display = 'none'; fill.style.width = '0%'; }, 800);
+      pendingFiles = [];
+      document.getElementById('file-input').value = '';
+      loadFiles();
+    }
+
+    // ── DOWNLOAD ──
+    async function downloadFile(fileId) {
+      try {
+        const data = await apiCall('GET', `/files/${fileId}`);
+        window.open(data.downloadUrl, '_blank');
+      } catch (e) {
+        showToast('Download failed: ' + e.message, 'error');
+      }
+    }
+
+    // ── DELETE ──
+    async function deleteFile(fileId, fileName) {
+      if (!confirm(`Delete "${fileName}"? This cannot be undone.`)) return;
+      try {
+        await apiCall('DELETE', `/files/${fileId}`);
+        showToast('File deleted', 'success');
+        loadFiles();
+      } catch (e) {
+        showToast('Delete failed: ' + e.message, 'error');
+      }
+    }
+
+    // ── SHARE ──
+    async function shareFile(fileId) {
+      document.getElementById('share-url-display').textContent = 'Generating link...';
+      document.getElementById('share-modal').classList.add('open');
+      try {
+        const data = await apiCall('POST', `/files/${fileId}/share`);
+        const shareUrl = `${window.location.origin}?share=${data.shareToken}`;
+        document.getElementById('share-url-display').textContent = shareUrl;
+        loadFiles();
+      } catch (e) {
+        document.getElementById('share-url-display').textContent = 'Error: ' + e.message;
+      }
+    }
+
+    function copyShareLink() {
+      const url = document.getElementById('share-url-display').textContent;
+      navigator.clipboard.writeText(url).then(() => showToast('Link copied!', 'success'));
+    }
+
+    // ── FOLDER FILTER ──
+    function filterFolder(folder, el) {
+      document.querySelectorAll('.folder-chip').forEach(c => c.classList.remove('active'));
+      el.classList.add('active');
+      currentFilterFolder = folder;
+      const filtered = folder ? allFiles.filter(f => f.folder === folder) : allFiles;
+      renderFiles(filtered);
+    }
+
+    // ── UTILS ──
+    function fileEmoji(type = '') {
+      if (type.startsWith('image/')) return '🖼';
+      if (type.startsWith('video/')) return '🎬';
+      if (type.startsWith('audio/')) return '🎵';
+      if (type.includes('pdf')) return '📄';
+      if (type.includes('zip') || type.includes('rar')) return '🗜';
+      if (type.includes('sheet') || type.includes('excel')) return '📊';
+      if (type.includes('doc') || type.includes('word')) return '📝';
+      return '📁';
+    }
+
+    function fileColor(type = '') {
+      if (type.startsWith('image/')) return 'rgba(108,99,255,0.15)';
+      if (type.startsWith('video/')) return 'rgba(255,101,132,0.15)';
+      if (type.startsWith('audio/')) return 'rgba(67,232,176,0.15)';
+      if (type.includes('pdf')) return 'rgba(255,165,0,0.15)';
+      return 'rgba(107,107,138,0.15)';
+    }
+
+    function formatSize(bytes = 0) {
+      if (bytes < 1024) return bytes + ' B';
+      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+      if (bytes < 1024 ** 3) return (bytes / 1024 / 1024).toFixed(1) + ' MB';
+      return (bytes / 1024 ** 3).toFixed(2) + ' GB';
+    }
+
+    function formatDate(iso) {
+      if (!iso) return '—';
+      return new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+    }
+
+    function escHtml(str = '') {
+      return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function showErr(el, msg) { el.textContent = '✗ ' + msg; el.style.display = 'block'; }
+
+    function showToast(msg, type = 'success') {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.className = `toast ${type} show`;
+      clearTimeout(t._timer);
+      t._timer = setTimeout(() => t.classList.remove('show'), 3500);
+    }
+
+    function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+    // Hide config banner if config looks filled in
+    if (!CONFIG.API_BASE_URL.includes('YOUR_API_ID')) {
+      document.getElementById('config-banner').style.display = 'none';
+    }
+  </script>
+</body>
+
+</html>
